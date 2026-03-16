@@ -1,1 +1,22 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Auto APK Compiler</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; text-align: center; padding-top: 100px; }
+        .box { background: white; padding: 40px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; font-size: 16px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Upload Android Project (ZIP)</h2>
+        <p>No commands needed. Just upload and compile!</p>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="sourceCode" required accept=".zip"><br>
+            <button type="submit">Upload & Go to Terminal</button>
+        </form>
+    </div>
+</body>
+</html>

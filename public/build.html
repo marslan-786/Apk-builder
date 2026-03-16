@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Build Terminal</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: monospace; background: #1e1e1e; color: #fff; padding: 20px; }
+        .controls { margin-bottom: 20px; }
+        button, a { padding: 10px 20px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; border-radius: 5px; text-decoration: none; display: inline-block;}
+        #startBtn { background: #28a745; color: white; }
+        #stopBtn { background: #dc3545; color: white; display: none; }
+        #downloadBtn { background: #ffc107; color: black; display: none; }
+        #terminal { background: black; color: #00ff00; padding: 15px; height: 70vh; overflow-y: scroll; white-space: pre-wrap; border: 1px solid #444; }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button id="startBtn">▶ Start Build</button>
+        <button id="stopBtn">⏹ Stop Build</button>
+        <a id="downloadBtn" href="#" download>⬇ Download APK</a>
+    </div>
+    <div id="terminal">System Ready. Click 'Start Build' to compile...</div>
+
+    <script>
+        const socket = io();
+        const fileId = new URLSearchParams(window.location.search).get('fileId');
+        
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const terminal = document.getElementById('terminal');
+
+        function log(msg) {
+            terminal.innerHTML += msg;
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        startBtn.onclick = () => {
+            startBtn.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+            terminal.innerHTML = '';
+            socket.emit('start_build', fileId);
+        };
+
+        stopBtn.onclick = () => {
+            socket.emit('stop_build');
+            stopBtn.style.display = 'none';
+            startBtn.style.display = 'inline-block';
+            startBtn.innerText = '↺ Restart Build';
+        };
+
+        socket.on('log', log);
+
+        socket.on('build_done', (apkUrl) => {
+            stopBtn.style.display = 'none';
+            startBtn.style.display = 'inline-block';
+            startBtn.innerText = '↺ Rebuild';
+            downloadBtn.href = apkUrl;
+            downloadBtn.style.display = 'inline-block';
+        });
+
+        socket.on('build_error', () => {
+            stopBtn.style.display = 'none';
+            startBtn.style.display = 'inline-block';
+            startBtn.innerText = '↺ Retry Build';
+        });
+    </script>
+</body>
+</html>
