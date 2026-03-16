@@ -10,7 +10,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Railway Volume Path (اگر ریلوے پر والیوم نہیں لگا تو لوکل 'data' فولڈر یوز کرے گا)
+// Railway Volume Path
 const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, 'data');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const BUILDS_DIR = path.join(DATA_DIR, 'builds');
@@ -42,26 +42,27 @@ io.on('connection', (socket) => {
 
         socket.emit('log', `[SYSTEM] Preparing to build project...\n`);
 
-        // یہ آٹومیٹک بیش اسکرپٹ (Bash Script) ہے جو سب کچھ خود کرے گا
+        // The Ultimate Auto-Builder Script
         const script = `
             echo "[1/4] Extracting ZIP file..."
             mkdir -p "${extractPath}"
             unzip -o -q "${zipPath}" -d "${extractPath}"
 
-            echo "[2/4] Searching for project root (gradlew)..."
-            GRADLE_DIR=$(find "${extractPath}" -name "gradlew" -printf "%h\n" | head -n 1)
+            echo "[2/4] Searching for project root..."
+            # Searching for either settings.gradle or settings.gradle.kts
+            PROJECT_DIR=$(find "${extractPath}" -name "settings.gradle*" -printf "%h\n" | head -n 1)
 
-            if [ -z "$GRADLE_DIR" ]; then
-                echo "ERROR: 'gradlew' not found! Invalid Android Project."
+            if [ -z "$PROJECT_DIR" ]; then
+                echo "ERROR: 'settings.gradle' or 'settings.gradle.kts' not found! Invalid Android Project."
                 exit 1
             fi
 
-            echo "[SYSTEM] Project root found at: $GRADLE_DIR"
-            cd "$GRADLE_DIR"
-            chmod +x gradlew
+            echo "[SYSTEM] Project root found at: $PROJECT_DIR"
+            cd "$PROJECT_DIR"
 
             echo "[3/4] Compiling APK (This may take a while)..."
-            ./gradlew assembleDebug --no-daemon
+            # Using global gradle instead of local gradlew
+            gradle assembleDebug --no-daemon
 
             echo "[4/4] Searching for generated APK..."
             APK_PATH=$(find . -name "*.apk" | head -n 1)
@@ -78,7 +79,7 @@ io.on('connection', (socket) => {
         buildProcess = spawn('bash', ['-c', script]);
 
         buildProcess.stdout.on('data', (data) => socket.emit('log', data.toString()));
-        buildProcess.stderr.on('data', (data) => socket.emit('log', data.toString())); // Gradle errors also come here
+        buildProcess.stderr.on('data', (data) => socket.emit('log', data.toString())); 
 
         buildProcess.on('close', (code) => {
             if (code === 0 && fs.existsSync(finalApkPath)) {
